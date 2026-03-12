@@ -1,5 +1,69 @@
 # Workspace
 
+## Semiconductor Product Alternative Search (Python/FastAPI)
+
+A modular Python backend for finding alternative semiconductor products.
+
+### Location: `semiconductor-search/`
+
+### Stack
+- **Framework**: FastAPI + Uvicorn
+- **Database**: PostgreSQL + pgvector (vector similarity search)
+- **HTML Parsing**: BeautifulSoup4
+- **Embeddings**: OpenAI `text-embedding-3-small` (optional — system works without it)
+- **Search**: Hybrid (structured SQL filter + cosine vector similarity)
+
+### How to run
+```
+cd semiconductor-search
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+Or use the "Semiconductor Search API" workflow.
+
+### API Endpoints
+- `GET  /health`                     — health check
+- `POST /ingest-data`                — parse CSV + HTML files, store specs in DB
+- `POST /generate-embeddings`        — generate OpenAI embeddings (requires OPENAI_API_KEY)
+- `GET  /find-alternatives?product_name=X` — find ranked alternatives
+- `GET  /products`                   — list all products
+- `GET  /products/{name}`            — get single product spec
+
+### Project structure
+```
+semiconductor-search/
+  config/
+    settings.py             # env vars, model config
+    categories_config.py    # per-category spec attributes + HTML label mappings
+  database/
+    db_client.py            # PostgreSQL client (psycopg2 + pgvector)
+  ingestion/
+    csv_loader.py           # reads products.csv
+    html_loader.py          # loads local HTML files
+    html_parser.py          # BeautifulSoup spec extraction
+    spec_normalizer.py      # converts raw strings to typed values
+  embeddings/
+    embedding_service.py    # OpenAI embedding generation (graceful fallback)
+  search/
+    structured_filter.py    # SQL-based candidate filtering
+    vector_search.py        # pgvector cosine similarity ranking
+    hybrid_search.py        # combines structured + vector search
+  api/
+    routes.py               # FastAPI route handlers
+  utils/
+    value_parser.py         # unit parsing (KB, MHz, V, A, etc.)
+    feature_builder.py      # builds features_text for embeddings
+  main.py                   # FastAPI app entry point
+  data/
+    products.csv            # sample product index
+    html/                   # sample HTML product pages
+```
+
+### Supported categories
+`microcontroller`, `sensor`, `power_ic`, `memory` — extend in `categories_config.py`
+
+---
+
+
 ## Overview
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
