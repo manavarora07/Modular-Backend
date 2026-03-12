@@ -8,19 +8,17 @@ Run with:
 import sys
 import os
 
-# Allow imports from the project root when running from semiconductor-search/
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database.db_client import initialize_schema
 from api.routes import router
 
 app = FastAPI(
     title="Semiconductor Product Alternative Search",
     description=(
         "Ingests locally-stored semiconductor HTML product pages, "
-        "extracts specs, stores them in PostgreSQL, generates OpenAI embeddings, "
+        "extracts specs, stores them in Oracle Database, generates OpenAI embeddings, "
         "and finds alternative products using hybrid search."
     ),
     version="1.0.0",
@@ -33,14 +31,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize the database schema on startup
+
 @app.on_event("startup")
 def on_startup():
+    """Initialize Oracle DB schema on startup (skipped gracefully if credentials missing)."""
     try:
+        from database.db_client import initialize_schema
         initialize_schema()
-        print("[Startup] Database schema ready.")
+        print("[Startup] Oracle schema ready.")
+    except RuntimeError as e:
+        # Credentials not yet configured — app still starts, schema init deferred
+        print(f"[Startup] Oracle not configured yet: {e}")
     except Exception as e:
-        print(f"[Startup] Warning: could not initialize schema: {e}")
+        print(f"[Startup] Warning: could not initialize Oracle schema: {e}")
+
 
 app.include_router(router)
 

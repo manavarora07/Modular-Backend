@@ -8,7 +8,7 @@ A modular Python backend for finding alternative semiconductor products.
 
 ### Stack
 - **Framework**: FastAPI + Uvicorn
-- **Database**: PostgreSQL + pgvector (vector similarity search)
+- **Database**: Oracle Database (MERGE upserts, CLOB for vector storage)
 - **HTML Parsing**: BeautifulSoup4
 - **Embeddings**: OpenAI `text-embedding-3-small` (optional — system works without it)
 - **Search**: Hybrid (structured SQL filter + cosine vector similarity)
@@ -35,7 +35,7 @@ semiconductor-search/
     settings.py             # env vars, model config
     categories_config.py    # per-category spec attributes + HTML label mappings
   database/
-    db_client.py            # PostgreSQL client (psycopg2 + pgvector)
+    db_client.py            # Oracle client (python-oracledb, thin mode)
   ingestion/
     csv_loader.py           # reads products.csv
     html_loader.py          # loads local HTML files

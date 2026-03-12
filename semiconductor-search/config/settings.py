@@ -1,7 +1,15 @@
 import os
 
-# Database connection string (uses Replit's built-in PostgreSQL)
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# Oracle Database connection settings
+# Set these as environment variables / secrets before running
+ORACLE_HOST = os.environ.get("ORACLE_HOST", "localhost")
+ORACLE_PORT = int(os.environ.get("ORACLE_PORT", "1521"))
+ORACLE_SERVICE_NAME = os.environ.get("ORACLE_SERVICE_NAME", "ORCL")
+ORACLE_USER = os.environ.get("ORACLE_USER", "")
+ORACLE_PASSWORD = os.environ.get("ORACLE_PASSWORD", "")
+
+# Convenience DSN string: host:port/service
+ORACLE_DSN = f"{ORACLE_HOST}:{ORACLE_PORT}/{ORACLE_SERVICE_NAME}"
 
 # OpenAI API key - optional, embeddings are skipped when not provided
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
