@@ -6,12 +6,15 @@ A modular Python backend for finding alternative semiconductor products.
 
 ### Location: `semiconductor-search/`
 
+> Canonical semiconductor backend: `semiconductor-search/` (Oracle only).
+> Root `main.py` now forwards to this FastAPI app to avoid split entrypoints.
+
 ### Stack
 - **Framework**: FastAPI + Uvicorn
 - **Database**: Oracle Database (MERGE upserts, CLOB for vector storage)
 - **HTML Parsing**: BeautifulSoup4
 - **Embeddings**: OpenAI `text-embedding-3-small` (optional — system works without it)
-- **Search**: Hybrid (structured SQL filter + cosine vector similarity)
+- **Search**: Hybrid (structured Oracle SQL filter + Python cosine similarity)
 
 ### How to run
 ```
@@ -45,7 +48,7 @@ semiconductor-search/
     embedding_service.py    # OpenAI embedding generation (graceful fallback)
   search/
     structured_filter.py    # SQL-based candidate filtering
-    vector_search.py        # pgvector cosine similarity ranking
+    vector_search.py        # Python cosine similarity ranking (Oracle embeddings)
     hybrid_search.py        # combines structured + vector search
   api/
     routes.py               # FastAPI route handlers
