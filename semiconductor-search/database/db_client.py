@@ -1,7 +1,7 @@
 """
 Oracle Database client using python-oracledb (thin mode — no Oracle Client required).
 
-Vector embeddings are stored as CLOB (JSON string) since pgvector is PostgreSQL-specific.
+Vector embeddings are stored as CLOB (JSON string) and ranked in Python.
 Cosine similarity is computed in Python after fetching candidates from Oracle.
 """
 

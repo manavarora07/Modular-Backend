@@ -1,7 +1,7 @@
 """
 Vector similarity search computed in Python using cosine similarity.
 
-Because Oracle does not have a built-in vector index like pgvector,
+Because Oracle vector indexes are not used in this project,
 embeddings are retrieved from Oracle as JSON CLOBs and cosine similarity
 is computed here in Python.
 
