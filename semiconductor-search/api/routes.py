@@ -1,11 +1,14 @@
 """FastAPI routes."""
 
+import csv
+import io
 import json
 import os
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
+from config.categories_config import CATEGORIES
 from ingestion.csv_loader import load_product_csv
 from ingestion.html_loader import load_html
 from ingestion.html_parser import parse_product_specs
@@ -46,6 +49,21 @@ class FindAlternativeRequest(BaseModel):
     top_k: int = Field(default=10, ge=1, le=100)
 
 
+class BomAlternativeItem(BaseModel):
+    input_part_number: str
+    base_product: dict | None
+    valid_attributes: dict
+    alternatives: list[dict]
+    error: str | None = None
+
+
+class BomAlternativeResponse(BaseModel):
+    total_inputs: int
+    processed: int
+    failed: int
+    results: list[BomAlternativeItem]
+
+
 def _coerce_embedding_text(value) -> str:
     if value is None:
         return ""
@@ -59,6 +77,47 @@ def _coerce_embedding_text(value) -> str:
         except Exception:
             return str(value)
     return str(value).strip()
+
+
+def _valid_attributes_for_product(product: dict | None) -> dict:
+    if not product:
+        return {}
+    category = str(product.get("category", "")).lower()
+    important_attributes = CATEGORIES.get(category, {}).get("important_attributes", [])
+    return {
+        key: product.get(key)
+        for key in important_attributes
+        if product.get(key) is not None
+    }
+
+
+def _parse_bom_part_numbers(csv_bytes: bytes) -> list[str]:
+    try:
+        decoded = csv_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        decoded = csv_bytes.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(decoded))
+    if not reader.fieldnames:
+        raise ValueError("CSV is missing a header row.")
+
+    normalized = {name.lower().strip(): name for name in reader.fieldnames if name}
+    candidate_columns = ["part_number", "product_name", "part", "component", "sku"]
+    source_col = next((normalized[col] for col in candidate_columns if col in normalized), None)
+    if not source_col:
+        raise ValueError(
+            "CSV must include one of these columns: part_number, product_name, part, component, sku"
+        )
+
+    part_numbers: list[str] = []
+    for row in reader:
+        value = str(row.get(source_col, "")).strip()
+        if value:
+            part_numbers.append(value)
+
+    if not part_numbers:
+        raise ValueError("CSV contains no usable part numbers.")
+    return part_numbers
 
 
 @router.get("/health")
@@ -215,6 +274,62 @@ def find_alternatives_endpoint(payload: FindAlternativeRequest):
     if result.get("error"):
         raise HTTPException(status_code=404, detail=result["error"])
     return result
+
+
+@router.post("/find-alternatives-bom", response_model=BomAlternativeResponse)
+async def find_alternatives_bom(file: UploadFile = File(...), top_k: int = Query(default=5, ge=1, le=50)):
+    if not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files are supported.")
+
+    content = await file.read()
+    try:
+        part_numbers = _parse_bom_part_numbers(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    results: list[BomAlternativeItem] = []
+    failed = 0
+
+    for part_number in part_numbers:
+        result = find_alternatives(part_number, top_n=top_k)
+        if result.get("error"):
+            failed += 1
+            results.append(
+                BomAlternativeItem(
+                    input_part_number=part_number,
+                    base_product=None,
+                    valid_attributes={},
+                    alternatives=[],
+                    error=result["error"],
+                )
+            )
+            continue
+
+        base_product = result.get("base_product")
+        alternatives = result.get("alternatives", [])
+        results.append(
+            BomAlternativeItem(
+                input_part_number=part_number,
+                base_product=base_product,
+                valid_attributes=_valid_attributes_for_product(base_product),
+                alternatives=[
+                    {
+                        "alternative_for": part_number,
+                        "rank": idx,
+                        "valid_attributes": _valid_attributes_for_product(candidate),
+                        **candidate,
+                    }
+                    for idx, candidate in enumerate(alternatives, start=1)
+                ],
+            )
+        )
+
+    return BomAlternativeResponse(
+        total_inputs=len(part_numbers),
+        processed=len(part_numbers) - failed,
+        failed=failed,
+        results=results,
+    )
 
 
 @router.get("/find-alternatives")
