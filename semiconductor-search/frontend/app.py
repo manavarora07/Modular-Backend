@@ -180,6 +180,16 @@ def _pros_cons(base: dict, candidate: dict) -> tuple[list[str], list[str]]:
     return pros, cons
 
 
+
+
+def _render_valid_attributes(attrs: dict, title: str):
+    st.markdown(f"**{title}**")
+    if not attrs:
+        st.caption("No mapped attributes found for this item.")
+        return
+    rows = [{"attribute": key, "value": value} for key, value in attrs.items()]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
 def _render_alt_card(position: int, candidate: dict, pros: list[str], cons: list[str]):
     score = candidate.get("rule_score", candidate.get("similarity_score", "NA"))
     tags = [candidate.get("category"), candidate.get("package_type")]
@@ -213,9 +223,10 @@ def _render_alt_card(position: int, candidate: dict, pros: list[str], cons: list
             st.write("No major drawbacks from configured checks.")
 
 
-tab_ingest, tab_find, tab_products = st.tabs([
+tab_ingest, tab_find, tab_bom, tab_products = st.tabs([
     "📥 Ingest Data",
     "🔎 Find Alternatives",
+    "🧾 BOM Alternatives",
     "📦 Product Catalog",
 ])
 
@@ -271,6 +282,53 @@ with tab_find:
                 _render_alt_card(idx, candidate, pros, cons)
                 with st.expander("View raw product data"):
                     st.json(candidate)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+with tab_bom:
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("BOM Alternative Finder")
+    st.caption("Upload a CSV with a `part_number` column (or `product_name`, `part`, `component`, `sku`).")
+    top_k_bom = st.number_input("Top K alternatives per BOM row", min_value=1, max_value=20, value=5)
+    bom_file = st.file_uploader("Upload BOM CSV", type=["csv"])
+
+    if st.button("Run /find-alternatives-bom", use_container_width=True):
+        if not bom_file:
+            st.warning("Please upload a CSV file first.")
+        else:
+            ok, payload = _request(
+                "POST",
+                "/find-alternatives-bom",
+                params={"top_k": int(top_k_bom)},
+                files={"file": (bom_file.name, bom_file.getvalue(), "text/csv")},
+            )
+
+            if not ok:
+                st.error(payload)
+            else:
+                stats = st.columns(3)
+                stats[0].metric("Total Inputs", payload.get("total_inputs", 0))
+                stats[1].metric("Processed", payload.get("processed", 0))
+                stats[2].metric("Failed", payload.get("failed", 0))
+
+                for item in payload.get("results", []):
+                    part_no = item.get("input_part_number", "unknown")
+                    st.markdown(f"### Input: {part_no}")
+                    if item.get("error"):
+                        st.error(item["error"])
+                        continue
+
+                    _render_valid_attributes(item.get("valid_attributes", {}), "Base product valid attributes")
+
+                    alternatives = item.get("alternatives", [])
+                    if not alternatives:
+                        st.info("No alternatives found for this part.")
+                        continue
+
+                    for alt in alternatives:
+                        rank = alt.get("rank", "-")
+                        st.markdown(f"#### Alternative #{rank}: {alt.get('part_number') or alt.get('product_name', 'Unknown')}")
+                        _render_valid_attributes(alt.get("valid_attributes", {}), "Alternative valid attributes")
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab_products:
