@@ -257,4 +257,118 @@ CATEGORIES = {
             "operating temperature range": "temp_range",
         },
     },
+    "power management ics":{
+        "important_attributes": [
+            "function",                 # e.g. "Buck Converter", "LDO Regulator", "Battery Charger"
+            "topology",                 # Buck / Boost / Buck-Boost / SEPIC / Flyback / Linear
+            "channels",                 # number of outputs / rails
+            "input_voltage_min",
+            "input_voltage_max",
+            "output_voltage_min",
+            "output_voltage_max",
+            "output_voltage_fixed",     # for fixed-output devices
+            "output_current_max_a",
+            "quiescent_current_ua",
+            "switching_frequency_khz",
+            "control_mode",             # PWM, PFM, Current-Mode, Voltage-Mode
+            "features",                 # enable, power good, soft-start, OCP, OTP, UVLO, sync, etc.
+            "efficiency",
+            "voltage_min",              # overall supply / operating voltage min
+            "voltage_max",              # overall supply / operating voltage max
+            "package_type",
+            "temp_range",
+        ],
+
+        "html_spec_map": {
+            # High-level function / category
+            "function": "function",
+            "device type": "function",
+            "regulator type": "function",
+            "power management function": "function",
+            "power management": "function",
+
+            # Topology
+            "topology": "topology",
+            "converter type": "topology",
+            "regulator topology": "topology",
+            "control topology": "topology",
+
+            # Channels / outputs
+            "number of outputs": "channels",
+            "outputs": "channels",
+            "channels": "channels",
+
+            # Input voltage
+            "input voltage": "input_voltage_range",
+            "input voltage range": "input_voltage_range",
+            "vin": "input_voltage_range",
+            "supply voltage": "input_voltage_range",
+            "operating input voltage": "input_voltage_range",
+
+            # Output voltage
+            "output voltage": "output_voltage_fixed",
+            "output voltage range": "output_voltage_range",
+            "adjustable output voltage": "output_voltage_range",
+            "vout": "output_voltage_fixed",
+            "fixed output voltage": "output_voltage_fixed",
+
+            # Output current
+            "output current": "output_current_max_a",
+            "maximum output current": "output_current_max_a",
+            "max output current": "output_current_max_a",
+            "iout": "output_current_max_a",
+            "load current": "output_current_max_a",
+
+            # Quiescent current
+            "quiescent current": "quiescent_current_ua",
+            "iq": "quiescent_current_ua",
+            "no load supply current": "quiescent_current_ua",
+
+            # Switching frequency
+            "switching frequency": "switching_frequency_khz",
+            "frequency switching": "switching_frequency_khz",
+            "oscillator frequency": "switching_frequency_khz",
+            "operating frequency": "switching_frequency_khz",
+
+            # Control mode
+            "control mode": "control_mode",
+            "modulation": "control_mode",
+            "regulation mode": "control_mode",
+
+            # Features / protection / functions
+            "features": "features",
+            "special features": "features",
+            "protection features": "features",
+            "protection": "features",
+            "enable": "features",
+            "soft start": "features",
+            "power good": "features",
+            "pg": "features",
+            "synchronization": "features",
+            "sync": "features",
+            "uvlo": "features",
+            "over current protection": "features",
+            "over temperature protection": "features",
+
+            # Efficiency
+            "efficiency": "efficiency",
+            "maximum efficiency": "efficiency",
+
+            # General operating / supply voltage for IC itself
+            "operating voltage": "voltage_range",
+            "operating supply voltage": "voltage_range",
+            "logic supply voltage": "voltage_range",
+
+            # Package
+            "package": "package_type",
+            "package case": "package_type",
+            "package / case": "package_type",
+            "mounting style": "package_type",   # often ties to SMD/Through Hole + package
+
+            # Temperature
+            "operating temperature": "temp_range",
+            "operating temperature range": "temp_range",
+            "temperature range": "temp_range",
+        },
+    }
 }
