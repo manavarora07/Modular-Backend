@@ -18,6 +18,7 @@ from database.db_client import (
     get_all_products,
     get_product_by_name,
     get_product_by_part_number,
+    get_products_with_embeddings,
 )
 from embeddings.embedding_service import get_embeddings_batch
 from search.hybrid_search import find_alternatives
@@ -132,7 +133,7 @@ def generate_embeddings():
             continue
         try:
             update_product_embedding(product["product_name"], embedding)
-            persisted = get_product_by_part_number(product["product_name"])
+            persisted = get_product_by_name(product["product_name"])
             if persisted:
                 upsert_product_vector(persisted)
             generated += 1
@@ -140,6 +141,22 @@ def generate_embeddings():
             skipped += 1
 
     return EmbeddingResponse(generated=generated, skipped=skipped, message=f"Generated embeddings for {generated} products.")
+
+
+@router.post("/sync-vector-db")
+def sync_vector_db():
+    """Push all Oracle products with embeddings into the external vector DB."""
+    synced = 0
+    skipped = 0
+
+    for product in get_products_with_embeddings():
+        try:
+            upsert_product_vector(product)
+            synced += 1
+        except Exception:
+            skipped += 1
+
+    return {"synced": synced, "skipped": skipped}
 
 
 @router.post("/find-alternative")

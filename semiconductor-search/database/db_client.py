@@ -280,6 +280,18 @@ def get_products_without_embeddings() -> list[dict]:
         conn.close()
 
 
+def get_products_with_embeddings() -> list[dict]:
+    """Return products that have embeddings (for vector index sync jobs)."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM products WHERE embedding_vector IS NOT NULL ORDER BY id")
+            columns = [c[0].lower() for c in cur.description]
+            return [_normalize_row(columns, r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+
+
 def get_all_products() -> list[dict]:
     conn = get_connection()
     try:
