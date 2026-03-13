@@ -17,9 +17,11 @@ from database.db_client import (
     update_product_embedding,
     get_all_products,
     get_product_by_name,
+    get_product_by_part_number,
 )
 from embeddings.embedding_service import get_embeddings_batch
 from search.hybrid_search import find_alternatives
+from vector_db.service import upsert_product_vector
 from config.settings import OPENAI_API_KEY
 
 router = APIRouter()
@@ -99,6 +101,9 @@ def ingest_demo_data(path: str = Query(default=DEMO_JSON_PATH)):
                 220 if str(record.get("package_type", "")).upper().startswith("TO-220") else 0,
             ]
             update_product_embedding(record["part_number"], vector)
+            persisted = get_product_by_part_number(record["part_number"])
+            if persisted:
+                upsert_product_vector(persisted)
             ingested += 1
         except Exception as e:
             errors.append(f"{record.get('part_number')}: {e}")
@@ -127,6 +132,9 @@ def generate_embeddings():
             continue
         try:
             update_product_embedding(product["product_name"], embedding)
+            persisted = get_product_by_part_number(product["product_name"])
+            if persisted:
+                upsert_product_vector(persisted)
             generated += 1
         except Exception:
             skipped += 1
